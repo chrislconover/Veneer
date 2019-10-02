@@ -128,7 +128,9 @@ open class Logger: NSObject, LoggerType {
         function: String,
         line: Int) {
 
-        log(format, args, file: file, function: function, line: line)
+        if logLevel.contains(.error) {
+            log(format, args, file: file, function: function, line: line)
+        }
     }
 
     public static func warn(
@@ -138,7 +140,9 @@ open class Logger: NSObject, LoggerType {
         function: String,
         line: Int) {
 
-        log(format, args, file: file, function: function, line: line)
+        if logLevel.contains(.warn) {
+            log(format, args, file: file, function: function, line: line)
+        }
     }
 
     public static func trace(
@@ -148,7 +152,9 @@ open class Logger: NSObject, LoggerType {
         function: String = #function,
         line: Int = #line) {
 
-        debug(format, args, file: file, function: function, line: line)
+        if logLevel.contains(.trace) {
+            log(format, args, file: file, function: function, line: line)
+        }
     }
 
     public static func debug(
@@ -158,9 +164,9 @@ open class Logger: NSObject, LoggerType {
         function: String = #function,
         line: Int = #line) {
 
-        #if DEBUG
-        log(format, args, file: file, function: function, line: line)
-        #endif
+        if logLevel.contains(.debug) {
+            log(format, args, file: file, function: function, line: line)
+        }
     }
 
     public static func log(
@@ -175,9 +181,26 @@ open class Logger: NSObject, LoggerType {
         withVaList(extendedArgs) { logger.doLog(extendedFormat, $0) }
     }
 
+
+
     static var logger: LoggerSink = ConsoleLogger()
+    public static var logLevel: LogLevel = .important
 }
 
+public struct LogLevel: OptionSet {
+    public let rawValue: Int
+
+    public init(rawValue: Int) { self.rawValue = rawValue }
+
+    public static let debug    = LogLevel(rawValue: 1 << 0)
+    public static let trace  = LogLevel(rawValue: 1 << 1)
+    public static let warn   = LogLevel(rawValue: 1 << 2)
+    public static let error   = LogLevel(rawValue: 1 << 3)
+
+    public static let verbose: LogLevel = [.debug, .trace]
+    public static let all: LogLevel = [.debug, .trace, .warn, .error]
+    public static let important: LogLevel = [.error]
+}
 
 public protocol LoggerSink {
     func doLog(_ format: String, _ args: CVaListPointer)
