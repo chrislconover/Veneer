@@ -11,11 +11,6 @@ import Foundation
 
 public protocol LoggerType {
 
-    func legacyError(_ format: String,
-                                 file: String,
-                                 function: String,
-                                 line: Int)
-
     static func error(
         _ format: String,
         _ args: CVarArg...,
@@ -55,13 +50,6 @@ public protocol LoggerType {
 
 extension LoggerType {
 
-    public func legacyError(_ format: String,
-                                 file: String = URL(string: #file)?.lastPathComponent ?? #file,
-                                 function: String = #function,
-                                 line: Int = #line) {
-        return legacyError(format, file: file, function: function, line: line)
-    }
-
     public static func error(
         _ format: String,
         _ args: CVarArg...,
@@ -74,7 +62,7 @@ extension LoggerType {
     public static func warn(
         _ format: String,
         _ args: CVarArg...,
-        file: String = URL(string: #file)?.lastPathComponent ?? #file,
+        file: String = #file,
         function: String = #function,
         line: Int = #line) {
         return warn(format, args, file: file, function: function, line: line)
@@ -84,7 +72,7 @@ extension LoggerType {
     public static func trace(
         _ format: String,
         _ args: CVarArg...,
-        file: String = URL(string: #file)?.lastPathComponent ?? #file,
+        file: String = #file,
         function: String = #function,
         line: Int = #line) {
         return trace(format, args, file: file, function: function, line: line)
@@ -93,7 +81,7 @@ extension LoggerType {
     public static func debug(
         _ format: String,
         _ args: CVarArg...,
-        file: String = URL(string: #file)?.lastPathComponent ?? #file,
+        file: String = #file,
         function: String = #function,
         line: Int = #line) {
         return debug(format, args, file: file, function: function, line: line)
@@ -102,7 +90,7 @@ extension LoggerType {
     public static func log(
         _ format: String,
         _ args: CVarArg...,
-        file: String = URL(string: #file)?.lastPathComponent ?? #file,
+        file: String = #file,
         function: String = #function,
         line: Int = #line) {
         return log(format, args, file: file, function: function, line: line)
@@ -111,15 +99,6 @@ extension LoggerType {
 
 
 open class Logger: NSObject, LoggerType {
-
-    public static func legacyError(_ format: String,
-                                   file: String = URL(string: #file)?.lastPathComponent ?? #file,
-                                   function: String = #function,
-                                   line: Int = #line) {
-        let extendedArgs = [CVarArg]()
-        let extendedFormat = "[%d]\t ERROR " + format
-        withVaList(extendedArgs) { logger.doLog(extendedFormat, $0) }
-    }
 
     public static func error(
         _ format: String,
@@ -148,8 +127,8 @@ open class Logger: NSObject, LoggerType {
     public static func trace(
         _ format: String,
         _ args: CVarArg...,
-        file: String = URL(string: #file)?.lastPathComponent ?? #file,
-        function: String = #function,
+        file: String,
+        function: String,
         line: Int = #line) {
 
         if logLevel.contains(.trace) {
@@ -160,10 +139,9 @@ open class Logger: NSObject, LoggerType {
     public static func debug(
         _ format: String,
         _ args: CVarArg...,
-        file: String = URL(string: #file)?.lastPathComponent ?? #file,
-        function: String = #function,
+        file: String,
+        function: String,
         line: Int = #line) {
-
         if logLevel.contains(.debug) {
             log(format, args, file: file, function: function, line: line)
         }
@@ -172,13 +150,13 @@ open class Logger: NSObject, LoggerType {
     public static func log(
         _ format: String,
         _ args: CVarArg...,
-        file: String = URL(string: #file)?.lastPathComponent ?? #file,
-        function: String = #function,
-        line: Int = #line) {
+        file: String,
+        function: String,
+        line: Int) {
 
-        let extendedFormat = "%@: %@ @%d\t " + format
-        let extendedArgs : [CVarArg] = [ file, function, line ] + args
-        withVaList(extendedArgs) { logger.doLog(extendedFormat, $0) }
+        let file = URL(string: file)?.lastPathComponent ?? file
+        let extendedFormat = "\(file).\(line): \(function) " + format
+        logger.doLog(extendedFormat, args)
     }
 
 
@@ -203,11 +181,33 @@ public struct LogLevel: OptionSet {
 }
 
 public protocol LoggerSink {
-    func doLog(_ format: String, _ args: CVaListPointer)
+    func doLog(_ format: String, _ args: [CVarArg])
 }
 
-open class ConsoleLogger: LoggerSink {
+
+open class NSLogger: LoggerSink {
+
+    public func doLog(_ format: String, _ args: [CVarArg]) {
+        NSLog(format, args)
+    }
+}
+
+
+open class NSLogvLogger: LoggerSink {
     public func doLog(_ format: String, _ args: CVaListPointer) {
         NSLogv(format, args)
     }
+
+    public func doLog(_ format: String, _ args: [CVarArg]) {
+        withVaList(args) { doLog(format, $0) }
+    }
 }
+
+open class ConsoleLogger: LoggerSink {
+
+    public func doLog(_ format: String, _ args: [CVarArg]) {
+        let foo = String(format: format, args)
+        print(foo)
+    }
+}
+
