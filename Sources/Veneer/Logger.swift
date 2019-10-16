@@ -154,8 +154,8 @@ open class Logger: NSObject, LoggerType {
         function: String,
         line: Int) {
 
-        let file = URL(string: file)?.lastPathComponent ?? file
-        let extendedFormat = "\(file).\(line): \(function) " + format
+        let fileName = URL(string: file)?.lastPathComponent ?? file
+        let extendedFormat = "\(fileName).\(line): \(function) " + format
         logger.doLog(extendedFormat, args)
     }
 
@@ -206,8 +206,7 @@ open class NSLogvLogger: LoggerSink {
 open class ConsoleLogger: LoggerSink {
 
     public func doLog(_ format: String, _ args: [CVarArg]) {
-        let foo = String(format: format, args)
-        print(foo)
+        print(String(format: format, args))
     }
 }
 
