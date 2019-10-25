@@ -25,14 +25,21 @@ public protocol LoggerType {
         function: String,
         line: Int)
 
-    static func trace(
+    static func debug(
         _ format: String,
         _ args: CVarArg...,
         file: String,
         function: String,
         line: Int)
 
-    static func debug(
+    static func info(
+        _ format: String,
+        _ args: CVarArg...,
+        file: String,
+        function: String,
+        line: Int)
+
+    static func trace(
         _ format: String,
         _ args: CVarArg...,
         file: String,
@@ -68,14 +75,13 @@ extension LoggerType {
         return warn(format, args, file: file, function: function, line: line)
     }
 
-
-    public static func trace(
+    public static func info(
         _ format: String,
         _ args: CVarArg...,
         file: String = #file,
         function: String = #function,
         line: Int = #line) {
-        return trace(format, args, file: file, function: function, line: line)
+        return info(format, args, file: file, function: function, line: line)
     }
 
     public static func debug(
@@ -85,6 +91,15 @@ extension LoggerType {
         function: String = #function,
         line: Int = #line) {
         return debug(format, args, file: file, function: function, line: line)
+    }
+
+    public static func trace(
+        _ format: String,
+        _ args: CVarArg...,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line) {
+        return trace(format, args, file: file, function: function, line: line)
     }
 
     public static func log(
@@ -124,14 +139,13 @@ open class Logger: NSObject, LoggerType {
         }
     }
 
-    public static func trace(
+    public static func info(
         _ format: String,
         _ args: CVarArg...,
         file: String,
         function: String,
         line: Int = #line) {
-
-        if logLevel.contains(.trace) {
+        if logLevel.contains(.info) {
             log(format, args, file: file, function: function, line: line)
         }
     }
@@ -143,6 +157,18 @@ open class Logger: NSObject, LoggerType {
         function: String,
         line: Int = #line) {
         if logLevel.contains(.debug) {
+            log(format, args, file: file, function: function, line: line)
+        }
+    }
+
+    public static func trace(
+        _ format: String,
+        _ args: CVarArg...,
+        file: String,
+        function: String,
+        line: Int = #line) {
+
+        if logLevel.contains(.trace) {
             log(format, args, file: file, function: function, line: line)
         }
     }
@@ -170,14 +196,14 @@ public struct LogLevel: OptionSet {
 
     public init(rawValue: Int) { self.rawValue = rawValue }
 
-    public static let debug    = LogLevel(rawValue: 1 << 0)
-    public static let trace  = LogLevel(rawValue: 1 << 1)
-    public static let warn   = LogLevel(rawValue: 1 << 2)
-    public static let error   = LogLevel(rawValue: 1 << 3)
+    public static let trace  = LogLevel(rawValue: 1)
+    public static let info  = LogLevel(rawValue: trace.rawValue << 1)
+    public static let debug = LogLevel(rawValue: info.rawValue << 1)
+    public static let warn  = LogLevel(rawValue: debug.rawValue << 1)
+    public static let error = LogLevel(rawValue: warn.rawValue << 1)
 
-    public static let verbose: LogLevel = [.debug, .trace]
-    public static let all: LogLevel = [.debug, .trace, .warn, .error]
-    public static let important: LogLevel = [.error]
+    public static let all: LogLevel = [.trace, .info, .debug, .warn, .error]
+    public static let important: LogLevel = [.warn, .error]
 }
 
 public protocol LoggerSink {
