@@ -182,13 +182,19 @@ open class Logger: NSObject, LoggerType {
 
         let fileName = URL(string: file)?.lastPathComponent ?? file
         let extendedFormat = "\(fileName).\(line): \(function) " + format
-        logger.doLog(extendedFormat, args)
+        doLog(extendedFormat, args)
     }
 
 
-
-    static var logger: LoggerSink = ConsoleLogger()
+    static func doLog(_ format: String, _ args: [CVarArg]) {
+        sinks.forEach { $0.doLog(format, args) }
+    }
+    
+    public static func add(sink: LoggerSink) { sinks.append(sink) }
+    public static func foo(sink: LoggerSink) { sinks.append(sink) }
     public static var logLevel: LogLevel = .important
+
+    static var sinks: [LoggerSink] = [ConsoleLogger()]
 }
 
 public struct LogLevel: OptionSet {
@@ -236,3 +242,9 @@ open class ConsoleLogger: LoggerSink {
     }
 }
 
+open class AnyLogger: LoggerSink {
+
+    public init(_ sink: @escaping (String, [CVarArg]) -> Void) { self.sink = sink }
+    public func doLog(_ format: String, _ args: [CVarArg]) { sink(format, args) }
+    private var sink: (String, [CVarArg]) -> Void
+}
