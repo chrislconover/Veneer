@@ -90,7 +90,9 @@ extension LoggerType {
         file: String = #file,
         function: String = #function,
         line: Int = #line) {
+        #if DEBUG
         return debug(format, args, file: file, function: function, line: line)
+        #endif
     }
 
     public static func trace(
@@ -181,7 +183,7 @@ open class Logger: NSObject, LoggerType {
         line: Int) {
 
         let fileName = URL(string: file)?.lastPathComponent ?? file
-        let extendedFormat = "\(fileName).\(line): \(function) " + format
+        let extendedFormat = "\(Date().timeStamp) \(fileName).\(line): \(function) " + format
         doLog(extendedFormat, args)
     }
 
@@ -247,4 +249,13 @@ open class AnyLogger: LoggerSink {
     public init(_ sink: @escaping (String, [CVarArg]) -> Void) { self.sink = sink }
     public func doLog(_ format: String, _ args: [CVarArg]) { sink(format, args) }
     private var sink: (String, [CVarArg]) -> Void
+}
+
+extension Date {
+    var timeStamp: String {
+        let formatter = DateFormatter()
+        formatter.timeZone = .current
+        formatter.dateFormat = "YY-MM-dd HH:mm:ss.SSS"
+        return formatter.string(from: self)
+    }
 }
