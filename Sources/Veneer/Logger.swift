@@ -204,10 +204,10 @@ public struct LogLevel: OptionSet {
 
     public init(rawValue: Int) { self.rawValue = rawValue }
 
-    public static let trace  = LogLevel(rawValue: 1)
-    public static let info  = LogLevel(rawValue: trace.rawValue << 1)
-    public static let debug = LogLevel(rawValue: info.rawValue << 1)
-    public static let warn  = LogLevel(rawValue: debug.rawValue << 1)
+    public static let debug = LogLevel(rawValue: 1)
+    public static let trace  = LogLevel(rawValue: debug.rawValue << 1)
+    public static let info = LogLevel(rawValue: trace.rawValue << 1)
+    public static let warn  = LogLevel(rawValue: info.rawValue << 1)
     public static let error = LogLevel(rawValue: warn.rawValue << 1)
 
     public static let all: LogLevel = [.trace, .info, .debug, .warn, .error]
