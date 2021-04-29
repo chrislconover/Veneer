@@ -49,6 +49,7 @@ public protocol LoggerType {
     static func log(
         _ format: String,
         _ args: CVarArg...,
+        logLevel level: LogLevel,
         file: String,
         function: String,
         line: Int)
@@ -107,10 +108,11 @@ extension LoggerType {
     public static func log(
         _ format: String,
         _ args: CVarArg...,
+        logLevel level: LogLevel,
         file: String = #file,
         function: String = #function,
         line: Int = #line) {
-        return log(format, args, file: file, function: function, line: line)
+        return log(format, args, logLevel: level, file: file, function: function, line: line)
     }
 }
 
@@ -125,7 +127,7 @@ open class Logger: NSObject, LoggerType {
         line: Int) {
 
         if logLevel.contains(.error) {
-            log(format, args, file: file, function: function, line: line)
+            log(format, args, logLevel: .error, file: file, function: function, line: line)
         }
     }
 
@@ -137,7 +139,7 @@ open class Logger: NSObject, LoggerType {
         line: Int) {
 
         if logLevel.contains(.warn) {
-            log(format, args, file: file, function: function, line: line)
+            log(format, args, logLevel: .warn, file: file, function: function, line: line)
         }
     }
 
@@ -148,7 +150,7 @@ open class Logger: NSObject, LoggerType {
         function: String,
         line: Int = #line) {
         if logLevel.contains(.info) {
-            log(format, args, file: file, function: function, line: line)
+            log(format, args, logLevel: .info, file: file, function: function, line: line)
         }
     }
 
@@ -159,7 +161,7 @@ open class Logger: NSObject, LoggerType {
         function: String,
         line: Int = #line) {
         if logLevel.contains(.debug) {
-            log(format, args, file: file, function: function, line: line)
+            log(format, args, logLevel: .debug, file: file, function: function, line: line)
         }
     }
 
@@ -171,20 +173,24 @@ open class Logger: NSObject, LoggerType {
         line: Int = #line) {
 
         if logLevel.contains(.trace) {
-            log(format, args, file: file, function: function, line: line)
+            log(format, args, logLevel: .trace, file: file, function: function, line: line)
         }
     }
 
     public static func log(
         _ format: String,
         _ args: CVarArg...,
+        logLevel level: LogLevel,
         file: String,
         function: String,
         line: Int) {
 
-        let fileName = URL(string: file)?.lastPathComponent ?? file
-        let extendedFormat = "\(Date().timeStamp) \(fileName).\(line): \(function) " + format
-        doLog(extendedFormat, args)
+        if self.logLevel.contains(level) {
+            let fileName = URL(string: file)?.lastPathComponent ?? file
+            let preface = formatTimestampFileLineFunction(Date().timeStamp, fileName, line, function)
+            let extendedFormat = preface + format
+            doLog(extendedFormat, args)
+        }
     }
 
 
@@ -193,8 +199,10 @@ open class Logger: NSObject, LoggerType {
     }
     
     public static func add(sink: LoggerSink) { sinks.append(sink) }
-    public static func foo(sink: LoggerSink) { sinks.append(sink) }
     public static var logLevel: LogLevel = .important
+    public static var formatTimestampFileLineFunction: (String, String, Int, String) -> String = {
+        timestamp, file, line, function in "\(Date().timeStamp) \(file).\(line): \(function) "
+    }
 
     static var sinks: [LoggerSink] = [ConsoleLogger()]
 }
