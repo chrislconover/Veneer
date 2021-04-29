@@ -50,6 +50,7 @@ public protocol LoggerType {
         _ level: LogLevel,
         _ format: String,
         _ args: CVarArg...,
+        logLevel level: LogLevel,
         file: String,
         function: String,
         line: Int)
@@ -109,6 +110,7 @@ extension LoggerType {
         _ level: LogLevel,
         _ format: String,
         _ args: CVarArg...,
+        logLevel level: LogLevel,
         file: String = #file,
         function: String = #function,
         line: Int = #line) {
@@ -181,6 +183,7 @@ open class Logger: NSObject, LoggerType {
         _ level: LogLevel,
         _ format: String,
         _ args: CVarArg...,
+        logLevel level: LogLevel,
         file: String,
         function: String,
         line: Int) {
