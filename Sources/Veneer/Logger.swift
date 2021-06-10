@@ -186,7 +186,8 @@ open class Logger: NSObject, LoggerType {
         line: Int) {
 
         if self.logLevel.contains(level) {
-            let fileName = URL(string: file)?.lastPathComponent ?? file
+            let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
+                .lastPathComponent ?? file
             let preface = formatTimestampFileLineFunction(Date().timeStamp, fileName, line, function)
             let extendedFormat = preface + format
             doLog(extendedFormat, args)
