@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os.log
 
 
 public protocol LoggerType {
@@ -186,26 +187,29 @@ open class Logger: NSObject, LoggerType {
         line: Int) {
 
         if self.logLevel.contains(level) {
-            let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
-                .lastPathComponent ?? file
-            let preface = formatTimestampFileLineFunction(Date().timeStamp, fileName, line, function)
-            let extendedFormat = preface + format
-            doLog(extendedFormat, args)
+            doLog(level, format: format,
+                  args: args,
+                  file: file,
+                  function: function,
+                  line: line)
         }
     }
 
-
-    static func doLog(_ format: String, _ args: [CVarArg]) {
-        sinks.forEach { $0.doLog(format, args) }
+    static func doLog(_ level: LogLevel,
+                      format: String,
+                      args: [CVarArg],
+                      file: String,
+                      function: String,
+                      line: Int) {
+        sinks.forEach {
+            $0.doLog(level, format: format, args: args,
+                     file: file, function: function, line: line)
+        }
     }
     
     public static func add(sink: LoggerSink) { sinks.append(sink) }
     public static var logLevel: LogLevel = .important
-    public static var formatTimestampFileLineFunction: (String, String, Int, String) -> String = {
-        timestamp, file, line, function in "\(Date().timeStamp) \(file).\(line): \(function) "
-    }
-
-    static var sinks: [LoggerSink] = [ConsoleLogger()]
+    public static var sinks: [LoggerSink] = [ConsoleLogger()]
 }
 
 public struct LogLevel: OptionSet {
@@ -224,40 +228,109 @@ public struct LogLevel: OptionSet {
 }
 
 public protocol LoggerSink {
-    func doLog(_ format: String, _ args: [CVarArg])
+    func doLog(_ level: LogLevel, message: String)
+    func doLog(_ level: LogLevel,
+               format: String, args: [CVarArg],
+               file: String,
+               function: String,
+               line: Int)
+}
+
+private func formatTimestampFileLineFunction(file: String, line: Int, function: String) -> String {
+    let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
+        .lastPathComponent ?? file
+    return "\(Date().timeStamp) \(fileName).\(line): \(function) "
+}
+
+
+extension LoggerSink {
+    public func doLog(_ level: LogLevel,
+               format: String,
+               args: [CVarArg],
+               file: String,
+               function: String,
+               line: Int) {
+        let preface = formatTimestampFileLineFunction(file: file, line: line, function: function)
+        let extendedFormat = preface + format
+        doLog(level, message: String(format: extendedFormat, arguments: args))
+    }
+}
+
+
+@available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
+public class OSLogSink: LoggerSink {
+    public init() {}
+    public func doLog(_ level: LogLevel, message: String) {
+        os_log("%@", log: .default, type: .init(logLevel: level), message)
+    }
+    
+    public func doLog(_ level: LogLevel,
+               format: String,
+               args: [CVarArg],
+               file: String,
+               function: String,
+               line: Int) {
+        let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
+            .lastPathComponent ?? file
+        let message = String(format: "\(fileName).\(line): \(function) \(format)", arguments: args)
+        doLog(level, message: message)
+    }
+}
+
+@available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
+extension OSLogType {
+    init(logLevel level: LogLevel) {
+        switch level {
+        case .debug: self.init(rawValue: OSLogType.debug.rawValue)
+        case .info: self.init(rawValue: OSLogType.info.rawValue)
+        case .warn: self.init(rawValue: OSLogType.default.rawValue)
+        case .error: self.init(rawValue: OSLogType.error.rawValue)
+        default: self.init(rawValue: OSLogType.default.rawValue)
+        }
+    }
 }
 
 
 open class NSLogger: LoggerSink {
-
-    public func doLog(_ format: String, _ args: [CVarArg]) {
-        NSLog(format, args)
+    public func doLog(_ level: LogLevel, message: String) {
+        NSLog(message)
     }
 }
 
 
 open class NSLogvLogger: LoggerSink {
-    public func doLog(_ format: String, _ args: CVaListPointer) {
-        NSLogv(format, args)
-    }
-
-    public func doLog(_ format: String, _ args: [CVarArg]) {
-        withVaList(args) { doLog(format, $0) }
+    public func doLog(_ level: LogLevel, message: String) {
+        withVaList([]) { NSLogv(message, $0) }
     }
 }
 
 open class ConsoleLogger: LoggerSink {
-
-    public func doLog(_ format: String, _ args: [CVarArg]) {
-        print(String(format: format, args))
+    public func doLog(_ level: LogLevel, message: String) {
+        print(message)
     }
 }
 
 open class AnyLogger: LoggerSink {
+    public func doLog(_ level: LogLevel, message: String) {
+        fatalError()
+    }
+    
+    public func doLog(_ level: LogLevel,
+                      format: String,
+                      args: [CVarArg],
+                      file: String,
+                      function: String,
+                      line: Int) {
+        let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
+            .lastPathComponent ?? file
+        sink(level, format, args, fileName, function, line)
+    }
 
-    public init(_ sink: @escaping (String, [CVarArg]) -> Void) { self.sink = sink }
-    public func doLog(_ format: String, _ args: [CVarArg]) { sink(format, args) }
-    private var sink: (String, [CVarArg]) -> Void
+    public init(_ sink: @escaping (LogLevel, String, [CVarArg], String, String, Int) -> Void) {
+        self.sink = sink
+    }
+    
+    private var sink: (LogLevel, String, [CVarArg], String, String, Int) -> Void
 }
 
 extension Date {
@@ -268,3 +341,4 @@ extension Date {
         return formatter.string(from: self)
     }
 }
+
