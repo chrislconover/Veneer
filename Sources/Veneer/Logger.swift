@@ -236,12 +236,6 @@ public protocol LoggerSink {
                line: Int)
 }
 
-private func formatTimestampFileLineFunction(file: String, line: Int, function: String) -> String {
-    let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
-        .lastPathComponent ?? file
-    return "\(Date().timeStamp) \(fileName).\(line): \(function) "
-}
-
 
 extension LoggerSink {
     public func doLog(_ level: LogLevel,
@@ -254,14 +248,22 @@ extension LoggerSink {
         let extendedFormat = preface + format
         doLog(level, message: String(format: extendedFormat, arguments: args))
     }
+    
+    func formatTimestampFileLineFunction(file: String, line: Int, function: String) -> String {
+        let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
+            .lastPathComponent ?? file
+        return "\(Date().timeStamp) \(fileName).\(line): \(function) "
+    }
 }
 
 
 @available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
 public class OSLogSink: LoggerSink {
-    public init() {}
+    public init(subSystem: String = Bundle.main.bundleIdentifier!) {
+        log = .init(subsystem: subSystem, category: "main")
+    }
     public func doLog(_ level: LogLevel, message: String) {
-        os_log("%@", log: .default, type: .init(logLevel: level), message)
+        os_log("%{public}@", log: log, type: .init(logLevel: level), message)
     }
     
     public func doLog(_ level: LogLevel,
@@ -275,6 +277,8 @@ public class OSLogSink: LoggerSink {
         let message = String(format: "\(fileName).\(line): \(function) \(format)", arguments: args)
         doLog(level, message: message)
     }
+    
+    let log: OSLog
 }
 
 @available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
@@ -289,7 +293,6 @@ extension OSLogType {
         }
     }
 }
-
 
 open class NSLogger: LoggerSink {
     public func doLog(_ level: LogLevel, message: String) {
