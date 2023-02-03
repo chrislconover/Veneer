@@ -259,7 +259,7 @@ extension LoggerSink {
 
 @available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
 public class OSLogSink: LoggerSink {
-    public init(subSystem: String = Bundle.main.bundleIdentifier!) {
+    init(subSystem: String = Bundle.main.bundleIdentifier!) {
         log = .init(subsystem: subSystem, category: "main")
     }
     public func doLog(_ level: LogLevel, message: String) {
@@ -294,11 +294,20 @@ extension OSLogType {
     }
 }
 
+extension LoggerSink where Self == OSLogSink {
+    public static var osLog: LoggerSink { OSLogSink() }
+}
+
 open class NSLogger: LoggerSink {
     public func doLog(_ level: LogLevel, message: String) {
         NSLog(message)
     }
 }
+
+extension LoggerSink where Self == NSLogger {
+    public static var nsLog: LoggerSink { NSLogger() }
+}
+
 
 
 open class NSLogvLogger: LoggerSink {
@@ -307,10 +316,18 @@ open class NSLogvLogger: LoggerSink {
     }
 }
 
+extension LoggerSink where Self == NSLogvLogger {
+    public static var nsLogv: LoggerSink { NSLogvLogger() }
+}
+
 open class ConsoleLogger: LoggerSink {
     public func doLog(_ level: LogLevel, message: String) {
         print(message)
     }
+}
+
+extension LoggerSink where Self == ConsoleLogger {
+    public static var console: LoggerSink { ConsoleLogger() }
 }
 
 open class AnyLogger: LoggerSink {
@@ -329,11 +346,17 @@ open class AnyLogger: LoggerSink {
         sink(level, format, args, fileName, function, line)
     }
 
-    public init(_ sink: @escaping (LogLevel, String, [CVarArg], String, String, Int) -> Void) {
+    init(_ sink: @escaping (LogLevel, String, [CVarArg], String, String, Int) -> Void) {
         self.sink = sink
     }
     
     private var sink: (LogLevel, String, [CVarArg], String, String, Int) -> Void
+}
+
+
+extension LoggerSink where Self == AnyLogger {
+    public static func anyLogger(_ logWith:  @escaping (LogLevel, String, [CVarArg], String, String, Int) -> Void)
+    -> LoggerSink { AnyLogger(logWith) }
 }
 
 extension Date {
