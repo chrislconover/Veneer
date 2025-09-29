@@ -19,7 +19,7 @@ public protocol LoggerType {
         function: String,
         line: Int)
 
-    static func warn(
+    static func warning(
         _ format: String,
         _ args: CVarArg...,
         file: String,
@@ -68,13 +68,23 @@ extension LoggerType {
         return error(format, args, file: file, function: function, line: line)
     }
 
+    public static func warning(
+        _ format: String,
+        _ args: CVarArg...,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line) {
+        return warning(format, args, file: file, function: function, line: line)
+    }
+
+    @available(*, deprecated, message: "use warning instead")
     public static func warn(
         _ format: String,
         _ args: CVarArg...,
         file: String = #file,
         function: String = #function,
         line: Int = #line) {
-        return warn(format, args, file: file, function: function, line: line)
+        return warning(format, args, file: file, function: function, line: line)
     }
 
     public static func info(
@@ -132,7 +142,7 @@ open class Logger: NSObject, LoggerType {
         }
     }
 
-    public static func warn(
+    public static func warning(
         _ format: String,
         _ args: CVarArg...,
         file: String,
@@ -208,7 +218,7 @@ open class Logger: NSObject, LoggerType {
     }
     
     public static func add(sink: LoggerSink) { sinks.append(sink) }
-    public static var logLevel: LogLevel = .important
+    public static var logLevel: LogLevel = .bad
     public static var sinks: [LoggerSink] = [ConsoleLogger()]
 }
 
@@ -223,8 +233,10 @@ public struct LogLevel: OptionSet {
     public static let warn  = LogLevel(rawValue: info.rawValue << 1)
     public static let error = LogLevel(rawValue: warn.rawValue << 1)
 
-    public static let all: LogLevel = [.trace, .info, .debug, .warn, .error]
-    public static let important: LogLevel = [.warn, .error]
+    public static let all: LogLevel = [.debug, .trace, .info, .warn, .error]
+    public static let verbose: LogLevel = [.trace, .info, .warn, .error]
+    public static let informative: LogLevel = [.info, .warn, .error]
+    public static let bad: LogLevel = [.warn, .error]
 }
 
 public protocol LoggerSink {
@@ -246,7 +258,8 @@ extension LoggerSink {
                line: Int) {
         let preface = formatTimestampFileLineFunction(file: file, line: line, function: function)
         let extendedFormat = preface + format
-        doLog(level, message: String(format: extendedFormat, arguments: args))
+        let message = !args.isEmpty ? String(format: extendedFormat, arguments: args) : extendedFormat
+        doLog(level, message: message)
     }
     
     func formatTimestampFileLineFunction(file: String, line: Int, function: String) -> String {
