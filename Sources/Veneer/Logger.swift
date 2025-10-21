@@ -271,7 +271,7 @@ extension LoggerSink {
 
 @available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
 public class OSLogSink: LoggerSink {
-    public init(subSystem: String = Bundle.main.bundleIdentifier!) {
+    init(subSystem: String = Bundle.main.bundleIdentifier!) {
         log = .init(subsystem: subSystem, category: "main")
     }
 
@@ -297,9 +297,12 @@ extension OSLogType {
 
 extension LoggerSink where Self == OSLogSink {
     public static var osLog: LoggerSink { OSLogSink() }
+    public static func osLog(subSystem: String = Bundle.main.bundleIdentifier!) -> LoggerSink {
+        OSLogSink(subSystem: subSystem)
+    }
 }
 
-open class NSLogger: LoggerSink {
+public class NSLogger: LoggerSink {
     public func doLog(_ level: LogLevel, message: String) {
         NSLog(message)
     }
@@ -309,9 +312,7 @@ extension LoggerSink where Self == NSLogger {
     public static var nsLog: LoggerSink { NSLogger() }
 }
 
-
-
-open class NSLogvLogger: LoggerSink {
+public class NSLogvLogger: LoggerSink {
     public func doLog(_ level: LogLevel, message: String) {
         withVaList([]) { NSLogv(message, $0) }
     }
@@ -321,7 +322,7 @@ extension LoggerSink where Self == NSLogvLogger {
     public static var nsLogv: LoggerSink { NSLogvLogger() }
 }
 
-open class ConsoleLogger: LoggerSink {
+public class ConsoleLogger: LoggerSink {
     public func doLog(_ level: LogLevel, message: String) {
         print(message)
     }
