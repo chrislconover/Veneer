@@ -248,7 +248,6 @@ public protocol LoggerSink {
                line: Int)
 }
 
-
 extension LoggerSink {
     public func doLog(_ level: LogLevel,
                format: String,
@@ -272,29 +271,18 @@ extension LoggerSink {
 
 @available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
 public class OSLogSink: LoggerSink {
-    init(subSystem: String = Bundle.main.bundleIdentifier!) {
+    public init(subSystem: String = Bundle.main.bundleIdentifier!) {
         log = .init(subsystem: subSystem, category: "main")
     }
+
     public func doLog(_ level: LogLevel, message: String) {
         os_log("%{public}@", log: log, type: .init(logLevel: level), message)
-    }
-    
-    public func doLog(_ level: LogLevel,
-               format: String,
-               args: [CVarArg],
-               file: String,
-               function: String,
-               line: Int) {
-        let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
-            .lastPathComponent ?? file
-        let message = String(format: "\(fileName).\(line): \(function) \(format)", arguments: args)
-        doLog(level, message: message)
     }
     
     let log: OSLog
 }
 
-@available(iOS 10.0, macOS 10.12, tvOS 10.0,  watchOS 3.0, *)
+@available(iOS 10.0, macOS 10.12, tvOS 10.0, watchOS 3.0, *)
 extension OSLogType {
     init(logLevel level: LogLevel) {
         switch level {
@@ -343,34 +331,6 @@ extension LoggerSink where Self == ConsoleLogger {
     public static var console: LoggerSink { ConsoleLogger() }
 }
 
-open class AnyLogger: LoggerSink {
-    public func doLog(_ level: LogLevel, message: String) {
-        fatalError()
-    }
-    
-    public func doLog(_ level: LogLevel,
-                      format: String,
-                      args: [CVarArg],
-                      file: String,
-                      function: String,
-                      line: Int) {
-        let fileName = URL(string: file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)?
-            .lastPathComponent ?? file
-        sink(level, format, args, fileName, function, line)
-    }
-
-    init(_ sink: @escaping (LogLevel, String, [CVarArg], String, String, Int) -> Void) {
-        self.sink = sink
-    }
-    
-    private var sink: (LogLevel, String, [CVarArg], String, String, Int) -> Void
-}
-
-
-extension LoggerSink where Self == AnyLogger {
-    public static func anyLogger(_ logWith:  @escaping (LogLevel, String, [CVarArg], String, String, Int) -> Void)
-    -> LoggerSink { AnyLogger(logWith) }
-}
 
 extension Date {
     var timeStamp: String {
