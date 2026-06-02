@@ -9,6 +9,7 @@
 
 import SwiftUI
 
+@available(iOS 13.0, *)
 public extension View {
     func trace(_ format: String,
                _ args: CVarArg...,
@@ -20,6 +21,7 @@ public extension View {
     }
 }
 
+@available(iOS 14.0, *)
 public extension Scene {
     func trace(_ format: String,
                _ args: CVarArg...,
@@ -31,6 +33,7 @@ public extension Scene {
     }
 }
 
+@available(iOS 13.0, *)
 public extension ViewModifier {
     func trace(_ format: String,
                _ args: CVarArg...,
@@ -43,6 +46,7 @@ public extension ViewModifier {
 }
 
 
+@available(iOS 14.0, *)
 public extension App {
     func trace(_ format: String,
                _ args: CVarArg...,
