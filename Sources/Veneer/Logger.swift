@@ -218,11 +218,13 @@ open class Logger: NSObject, LoggerType {
     }
     
     public static func add(sink: LoggerSink) { sinks.append(sink) }
-    public static var logLevel: LogLevel = .bad
-    public static var sinks: [LoggerSink] = [ConsoleLogger()]
+    nonisolated(unsafe) public static var logLevel: LogLevel = .bad
+    nonisolated(unsafe) public static var sinks: [LoggerSink] = [ConsoleLogger()]
 }
 
-public struct LogLevel: OptionSet {
+/// `Sendable` is declared rather than inferred: implicit conformance is granted only to
+/// non-public types, so without it every `static let` below is flagged as unsafe global state.
+public struct LogLevel: OptionSet, Sendable {
     public let rawValue: Int
 
     public init(rawValue: Int) { self.rawValue = rawValue }
