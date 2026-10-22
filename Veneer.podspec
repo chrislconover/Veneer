@@ -19,8 +19,8 @@ Simple facade to avoid vender lock-in of third party loggers.  Used across inter
   s.author           = { 'chrislconover' => 'github@curiousapplications.com' }
   s.source           = { :git => 'https://github.com/chrislconover/Veneer.git', :tag => s.version.to_s }
 
-  s.ios.deployment_target = '12.0'
-  s.osx.deployment_target  = '10.13'
+  s.ios.deployment_target = '17.0'
+  s.osx.deployment_target  = '14.0'
 
   s.source_files = 'Sources/**/*'
 end
